@@ -32,12 +32,23 @@ class ReviewsController < ApplicationController
 
   def update
     @review.update(review_params)
-    respond_with(@review)
+    respond_to do |format|
+      if @review.update(review_params)
+        format.html { redirect_to restaurant_path(@restaurant), notice: 'Review was successfully updated.' }
+        format.json { render :show, status: :ok, location: @review }
+      else
+        format.html { render :edit }
+        format.json { render json: @review.errors, status: :unprocessable_entity }
+      end
+    end
   end
 
   def destroy
     @review.destroy
-    respond_with(@review)
+    respond_to do |format|
+      format.html { redirect_to restaurant_path(@restaurant), notice: 'Review was successfully destroyed.' }
+      format.json { head :no_content }
+    end
   end
 
   private
@@ -47,6 +58,12 @@ class ReviewsController < ApplicationController
 
     def set_restaurant
       @restaurant = Restaurant.find(params[:restaurant_id])
+    end
+
+    def check_user
+      unless (@review.user == current_user) || (current_user.admin?)
+        redirect_to root_url, alert: "Sorry, this review belongs to someone else"
+      end
     end
 
     def review_params
